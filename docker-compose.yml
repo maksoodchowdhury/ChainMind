@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.7.0
+    container_name: qdrant_db
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./data/qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+    networks:
+      - supply_chain_network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supply_chain_api
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      - qdrant
+    volumes:
+      - ./data/uploads:/app/data/uploads
+      - ./logs:/app/logs
+    networks:
+      - supply_chain_network
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+networks:
+  supply_chain_network:
+    driver: bridge

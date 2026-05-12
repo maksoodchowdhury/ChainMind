@@ -1,0 +1,202 @@
+# SupplyChain RAG Assistant
+
+A containerized RAG (Retrieval-Augmented Generation) assistant for supply-chain decision support using Python, FastAPI, vector search, and LLMs.
+
+## Features
+
+- **Document Management**: Upload and manage supply chain documents (PDFs, text, CSV)
+- **Vector Search**: Efficient semantic search using Qdrant vector database
+- **LLM Integration**: GPT-4 powered responses with citations
+- **REST API**: FastAPI endpoints for all operations
+- **Built-in UI**: Attractive browser UI for uploads, querying, streaming, and source inspection
+- **Containerized**: Docker and docker-compose for easy deployment
+- **Production Ready**: Includes logging, error handling, and health checks
+
+## Project Structure
+
+```
+├── src/
+│   ├── main.py              # FastAPI application entry point
+│   ├── config.py            # Configuration settings
+│   ├── rag_pipeline.py      # RAG pipeline logic
+│   ├── api_documents.py     # Document management endpoints
+│   ├── api_query.py         # Query endpoints
+│   └── api_health.py        # Health check endpoint
+├── tests/
+│   ├── test_api.py          # API endpoint tests
+│   └── test_config.py       # Configuration tests
+├── data/
+│   └── uploads/             # Uploaded documents (created at runtime)
+├── docker-compose.yml       # Docker compose configuration
+├── Dockerfile               # API container image
+├── requirements.txt         # Python dependencies
+└── README.md               # This file
+```
+
+## Prerequisites
+
+- Python 3.11+
+- Docker & Docker Compose (optional, for containerized deployment)
+- OpenAI API key
+
+## Quick Start
+
+### Local Development
+
+1. **Clone and setup environment**:
+   ```bash
+   cd SupplyChain-RAG-Assistant
+   cp .env.example .env
+   # Edit .env and add your OpenAI API key
+   ```
+
+2. **Create virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Start Qdrant locally** (if not using Docker):
+   ```bash
+   docker run -p 6333:6333 qdrant/qdrant:v1.7.0
+   ```
+
+5. **Run the API**:
+   ```bash
+   python -m uvicorn src.main:app --reload
+   ```
+
+   The API will be available at `http://localhost:8000`
+
+### Docker Deployment
+
+1. **Setup environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your OpenAI API key
+   ```
+
+2. **Start services**:
+   ```bash
+   docker-compose up --build
+   ```
+
+   Services:
+   - API: http://localhost:8000
+   - Qdrant: http://localhost:6333
+
+## API Endpoints
+
+### Health Check
+```bash
+GET /health
+```
+
+### Document Management
+```bash
+# Upload document
+POST /api/documents/upload
+Content-Type: multipart/form-data
+Body: file=<file>
+
+# List documents
+GET /api/documents/list
+```
+
+### Query
+```bash
+POST /api/query/
+Content-Type: application/json
+Body: {
+  "query": "What is our demand forecast for Q3?",
+  "top_k": 5
+}
+```
+
+### Interactive Documentation
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- App UI: http://localhost:8000/ui
+
+## Configuration
+
+Environment variables (see `.env.example`):
+
+- `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `QDRANT_HOST`: Qdrant server host (default: localhost)
+- `QDRANT_PORT`: Qdrant server port (default: 6333)
+- `COLLECTION_NAME`: Qdrant collection name (default: supply_chain_documents)
+- `LOG_LEVEL`: Logging level (default: INFO)
+
+## Testing
+
+Run all tests:
+```bash
+pytest
+```
+
+Run with coverage:
+```bash
+pytest --cov=src
+```
+
+Run specific test file:
+```bash
+pytest tests/test_api.py -v
+```
+
+## Development
+
+### Project Structure Pattern
+
+- **config.py**: All configuration via Pydantic BaseSettings
+- **rag_pipeline.py**: RAG logic (separate from API)
+- **api_*.py**: Modular API routers
+- **main.py**: FastAPI app assembly with lifespan management
+
+### Adding New Features
+
+1. Create documents/chunks
+2. Add to vector store in Qdrant
+3. Query and retrieve with context
+4. Generate response with LLM
+
+## Next Steps
+
+- [ ] Add document chunking strategies
+- [ ] Implement document metadata filtering
+- [ ] Add evaluation metrics for retrieval quality
+- [ ] Create admin dashboard
+- [ ] Add user authentication
+- [ ] Implement caching layer
+- [ ] Add batch processing for large uploads
+
+## Troubleshooting
+
+**"Connection refused" to Qdrant**:
+- Ensure Qdrant is running: `docker ps | grep qdrant`
+- Check connection URL in `.env`
+
+**"API key not found"**:
+- Verify `OPENAI_API_KEY` is set in `.env`
+- Restart the application
+
+**Documents not loaded**:
+- Check upload directory exists: `ls -la data/uploads/`
+- Review logs for parsing errors
+
+## License
+
+MIT
+
+## References
+
+- [LlamaIndex Docs](https://docs.llamaindex.ai/)
+- [Qdrant Docs](https://qdrant.tech/documentation/)
+- [FastAPI Docs](https://fastapi.tiangolo.com/)
+- [OpenAI API](https://platform.openai.com/docs)

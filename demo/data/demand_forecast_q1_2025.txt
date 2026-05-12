@@ -1,0 +1,122 @@
+ACME GLOBAL SUPPLY CHAIN — DEMAND FORECAST REPORT
+Q1 2025 (January – March)
+Document Type: demand_plan | Supplier Region: Global | Prepared by: Supply Chain Analytics Team
+
+════════════════════════════════════════════════════
+SECTION 1 — EXECUTIVE SUMMARY
+════════════════════════════════════════════════════
+
+Total forecasted demand for Q1 2025 is 1.84 million units across all product categories,
+representing a 12% increase over Q1 2024. Key drivers include new product launches in
+the Industrial Automation segment and seasonal uplift in Consumer Electronics.
+
+Risk-adjusted forecast (P80 confidence): 1.92 million units.
+Risk-adjusted forecast (P50 confidence): 1.84 million units.
+
+════════════════════════════════════════════════════
+SECTION 2 — DEMAND BY PRODUCT CATEGORY
+════════════════════════════════════════════════════
+
+2.1 Consumer Electronics
+────────────────────────
+Forecasted units : 620,000
+Prior quarter    : 540,000  (+14.8%)
+Peak month       : February (Valentine's Day promotion: +22% uplift expected)
+Key SKUs         :
+  - SKU-CE-1001 : Smart Home Hub v3     → 180,000 units
+  - SKU-CE-1002 : Wireless Earbuds Pro  → 240,000 units
+  - SKU-CE-1003 : Portable Charger 65W  → 200,000 units
+
+Sourcing notes   : 80% sourced from Ningbo Electronics Ltd (China).
+                   Remaining 20% from FlexPower GmbH (Germany) for EU compliance.
+Lead time        : 6–8 weeks for standard orders; 10–12 weeks for custom configurations.
+Safety stock     : 15% of monthly forecast = 31,000 units.
+
+2.2 Industrial Automation Components
+─────────────────────────────────────
+Forecasted units : 85,000
+Prior quarter    : 62,000  (+37.1% — new product line launch effect)
+Peak month       : January (capital equipment buying cycle)
+Key SKUs         :
+  - SKU-IA-2001 : PLC Controller Module  → 30,000 units
+  - SKU-IA-2002 : Servo Motor 400W       → 28,000 units
+  - SKU-IA-2003 : Vision Sensor v2       → 27,000 units
+
+Sourcing notes   : Single-source supplier: Mitsuya Precision (Japan).
+                   RISK: Single-source dependency flagged for mitigation (see Section 5).
+Lead time        : 14–16 weeks (longest in portfolio).
+Safety stock     : 20% of monthly forecast = 5,667 units.
+
+2.3 Raw Materials — Steel & Aluminium
+──────────────────────────────────────
+Forecasted volume: 850 metric tons (steel: 600t, aluminium: 250t)
+Prior quarter    : 780 metric tons (+9.0%)
+Price trend      : Steel +3.2% MoM; Aluminium -1.1% MoM (LME spot).
+Minimum order qty: 50 metric tons per supplier per order.
+Storage cost     : $3.10 per ton per month.
+
+Preferred suppliers:
+  - ArclorMittal Europe   → steel, 60% share, lead time 4 weeks
+  - Novelis North America → aluminium, 100% share, lead time 5 weeks
+
+Safety stock     : 2 weeks of consumption = 130 metric tons.
+
+2.4 Packaging Materials
+───────────────────────
+Forecasted units : 2,800,000 units (corrugated boxes, foam inserts, labels)
+Prior quarter    : 2,600,000 units (+7.7%)
+Supplier         : GreenPack Industries (domestic, lead time 3–4 weeks)
+Sustainable SKUs : Recycled-content option available (+8% cost premium).
+                   Mandatory for EU shipments per new regulation effective Feb 2025.
+Safety stock     : 10% of monthly forecast = 93,333 units.
+
+════════════════════════════════════════════════════
+SECTION 3 — REGIONAL DEMAND BREAKDOWN
+════════════════════════════════════════════════════
+
+Region           Units       % of Total   YoY Change
+─────────────────────────────────────────────────────
+North America    720,000      39.1%         +8%
+Europe           450,000      24.5%         +15%  ← strongest growth
+Asia Pacific     380,000      20.7%         +18%
+Latin America    180,000       9.8%         +6%
+Middle East &    110,000       6.0%         +10%
+Africa
+
+════════════════════════════════════════════════════
+SECTION 4 — INVENTORY TARGETS
+════════════════════════════════════════════════════
+
+Weeks of Supply (WoS) Targets for Q1 2025:
+  Consumer Electronics   : 6 WoS  (current: 5.2 WoS — replenishment order placed)
+  Industrial Automation  : 8 WoS  (current: 9.1 WoS — slight overstock, hold orders)
+  Raw Materials          : 4 WoS  (current: 3.8 WoS — within acceptable range)
+  Packaging Materials    : 3 WoS  (current: 3.1 WoS — within acceptable range)
+
+Economic Order Quantity (EOQ) model is applied for all categories.
+Obsolescence threshold : items with >180 days without movement flagged for review.
+Quarterly inventory audit scheduled: March 28, 2025.
+
+════════════════════════════════════════════════════
+SECTION 5 — DEMAND PLANNING ASSUMPTIONS
+════════════════════════════════════════════════════
+
+1. No major macroeconomic disruptions assumed in Q1 2025.
+2. Valentine's Day promotion (Feb 10–14) expected to lift Consumer Electronics by 22%.
+3. Q1 seasonal dip in Latin America (summer holidays) already factored in.
+4. Raw material price increases are passed through to finished goods pricing with 30-day lag.
+5. All lead times assume no port congestion. Port congestion risk: MEDIUM for Q1 (see Section 5 of Risk Report).
+6. Currency: all volumes in USD. EUR/USD assumed at 1.09 for European cost calculations.
+
+════════════════════════════════════════════════════
+SECTION 6 — ACTIONS & OWNERS
+════════════════════════════════════════════════════
+
+Action                                   Owner           Due Date    Status
+─────────────────────────────────────────────────────────────────────────────
+Place CE replenishment order             Procurement     Jan 15      OPEN
+Qualify secondary supplier for IA-2001  Supplier Dev    Feb 28      IN PROGRESS
+Negotiate Q2 steel contract             Procurement     Jan 31      OPEN
+Implement sustainable packaging for EU  Operations      Jan 20      COMPLETED
+Update safety stock formula for CE      Planning        Jan 10      OPEN
+Review Novelis aluminium contract       Procurement     Feb 14      OPEN

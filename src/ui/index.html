@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SupplyChain RAG Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="/ui/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+</head>
+
+<body>
+    <div class="bg-orb bg-orb-a"></div>
+    <div class="bg-orb bg-orb-b"></div>
+
+    <header class="hero">
+        <div class="hero__text">
+            <p class="hero__eyebrow">Supply Chain Intelligence Workspace</p>
+            <h1>Ask Your Operations Data, Not Your Gut</h1>
+            <p>
+                Upload demand plans, supplier sheets, inventory rules, and risk reports.
+                Then ask focused questions with source-backed answers in seconds.
+            </p>
+        </div>
+        <div class="hero__status card">
+            <h2>System Status</h2>
+            <div id="healthBadge" class="badge badge--idle">Checking...</div>
+            <ul id="healthDetails" class="status-list"></ul>
+            <button id="refreshHealthBtn" class="btn btn--ghost" type="button">Refresh</button>
+        </div>
+    </header>
+
+    <main class="layout">
+        <section class="card card--upload">
+            <h2>1) Upload Documents</h2>
+            <p class="muted">Add documents with optional metadata so searches stay precise.</p>
+
+            <form id="uploadForm" class="form-grid">
+                <label>
+                    API Key (optional)
+                    <input id="apiKeyInput" type="password" placeholder="Used when AUTH_ENABLED=true" />
+                </label>
+                <label>
+                    File
+                    <input id="fileInput" type="file" required />
+                </label>
+                <label>
+                    Supplier
+                    <input id="supplierInput" type="text" placeholder="e.g. Ningbo Electronics" />
+                </label>
+                <label>
+                    Document Type
+                    <input id="docTypeInput" type="text" placeholder="e.g. risk_assessment" />
+                </label>
+                <label>
+                    Date Period
+                    <input id="datePeriodInput" type="text" placeholder="e.g. Q1-2025" />
+                </label>
+                <div class="actions">
+                    <button class="btn" type="submit">Upload & Index</button>
+                </div>
+            </form>
+
+            <div id="uploadMessage" class="flash"></div>
+
+            <h3>Ingestion Jobs</h3>
+            <div id="jobsList" class="stack-list empty">No jobs yet.</div>
+        </section>
+
+        <section class="card card--query">
+            <h2>2) Query the Knowledge Base</h2>
+            <p class="muted">Use metadata filters to narrow scope and improve factual precision.</p>
+
+            <form id="queryForm" class="form-grid">
+                <label class="label--full">
+                    Question
+                    <textarea id="queryInput" rows="4"
+                        placeholder="What are the critical supply chain risks in Q1 2025?" required></textarea>
+                </label>
+
+                <label>
+                    Top K
+                    <input id="topKInput" type="number" min="1" max="15" value="5" />
+                </label>
+
+                <label>
+                    Response Mode
+                    <select id="modeInput">
+                        <option value="standard">Standard</option>
+                        <option value="stream">Stream</option>
+                    </select>
+                </label>
+
+                <label>
+                    Filter: Supplier
+                    <input id="filterSupplierInput" type="text" placeholder="optional" />
+                </label>
+
+                <label>
+                    Filter: Document Type
+                    <input id="filterDocTypeInput" type="text" placeholder="optional" />
+                </label>
+
+                <label>
+                    Filter: Date Period
+                    <input id="filterDateInput" type="text" placeholder="optional" />
+                </label>
+
+                <div class="actions">
+                    <button class="btn" type="submit">Ask Question</button>
+                    <button id="clearAnswerBtn" class="btn btn--ghost" type="button">Clear</button>
+                </div>
+            </form>
+
+            <div class="prompt-chips" id="promptChips"></div>
+
+            <article class="answer-panel">
+                <h3>Answer</h3>
+                <div id="answerBox" class="answer-box empty">Your response will appear here.</div>
+                <h3>Sources</h3>
+                <div id="sourcesBox" class="stack-list empty">No sources yet.</div>
+            </article>
+
+            <!-- Query Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div class="metric-label">Response Time</div>
+                    <div id="responseTimeMetric" class="metric-value">-</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Top Source Score</div>
+                    <div id="topScoreMetric" class="metric-value">-</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-label">Sources Found</div>
+                    <div id="sourcesCountMetric" class="metric-value">-</div>
+                </div>
+            </div>
+
+            <!-- Source Relevance Chart -->
+            <div class="chart-container" id="relevanceChartContainer" style="display:none;">
+                <h3>Source Relevance Scores</h3>
+                <canvas id="relevanceChart" height="60"></canvas>
+            </div>
+        </section>
+
+        <section class="card card--docs">
+            <h2>3) Indexed Documents</h2>
+            <div class="actions actions--inline">
+                <button id="refreshDocsBtn" class="btn btn--ghost" type="button">Refresh List</button>
+                <button id="clearCacheBtn" class="btn btn--ghost" type="button">Clear Cache</button>
+            </div>
+
+            <!-- Document Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="docCountStat">0</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="docSizeStat">0</div>
+                    <div class="stat-label">Total Size (MB)</div>
+                </div>
+            </div>
+
+            <!-- Document Charts -->
+            <div class="charts-row">
+                <div class="chart-half" id="docTypeChartContainer" style="display:none;">
+                    <h3>By Type</h3>
+                    <canvas id="docTypeChart"></canvas>
+                </div>
+                <div class="chart-half" id="docSizeChartContainer" style="display:none;">
+                    <h3>By Size</h3>
+                    <canvas id="docSizeChart"></canvas>
+                </div>
+            </div>
+
+            <div id="docsList" class="stack-list empty">No documents indexed yet.</div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>SupplyChain RAG Assistant UI</span>
+        <a href="/docs" target="_blank" rel="noreferrer">Open API Docs</a>
+    </footer>
+
+    <script src="/ui/app.js" defer></script>
+</body>
+
+</html>
