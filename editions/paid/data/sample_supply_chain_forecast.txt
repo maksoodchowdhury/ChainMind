@@ -1,0 +1,48 @@
+Supply Chain Demand Forecast - Q3 2024
+
+EXECUTIVE SUMMARY
+================
+This document outlines the demand forecast for Q3 2024 across all major product categories.
+
+DEMAND BY PRODUCT CATEGORY
+==========================
+
+1. Electronics Components
+   - Expected demand: 250,000 units
+   - Peak month: July
+   - Supplier lead time: 6-8 weeks
+   - Key supplier: Ningbo Electronics Ltd.
+
+2. Raw Materials (Steel/Aluminum)
+   - Expected demand: 500 metric tons
+   - Price trend: Increasing 2-3% monthly
+   - Minimum order quantity: 50 metric tons
+   - Storage cost: $2.50 per unit per month
+
+3. Packaging Materials
+   - Expected demand: 1,500,000 units
+   - Lead time: 3-4 weeks
+   - Supplier: Greenpack Industries
+   - Sustainable option: +15% cost, recyclable
+
+INVENTORY POLICIES
+==================
+- Safety stock level: 15% of monthly demand
+- Reorder point: 30 days of forecast
+- Economic order quantity calculation enabled
+- Just-in-time delivery for perishables
+- Quarterly inventory audits mandatory
+
+SUPPLIER NOTES
+==============
+- Supplier A: Reliable, 98% on-time delivery rate
+- Supplier B: Capacity constraints in August, plan accordingly
+- Supplier C: New entrant, 5% price discount for bulk orders
+- Negotiation timeline: Complete by June 30th
+
+CONSTRAINTS & RISKS
+===================
+- Port congestion expected mid-July (3-5 day delays)
+- Currency volatility for international suppliers
+- Tariff changes may impact Q4 pricing
+- Weather risk for agricultural materials
