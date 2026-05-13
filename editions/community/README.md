@@ -36,24 +36,28 @@ Community edition excludes:
 
 ## Project Structure
 
+This community edition shares core code from the repository root:
+
 ```
-├── src/
-│   ├── main.py              # FastAPI application entry point
-│   ├── config.py            # Configuration settings
-│   ├── rag_pipeline.py      # RAG pipeline logic
-│   ├── api_documents.py     # Document management endpoints
-│   ├── api_query.py         # Query endpoints
-│   └── api_health.py        # Health check endpoint
-├── tests/
-│   ├── test_api.py          # API endpoint tests
-│   └── test_config.py       # Configuration tests
-├── data/
-│   └── uploads/             # Uploaded documents (created at runtime)
-├── docker-compose.yml       # Docker compose configuration
-├── Dockerfile               # API container image
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+editions/community/                    # Community edition (OSS release configuration)
+├── .env.example                       # Community defaults
+├── .github/workflows/                 # Community CI pipelines
+├── CONTRIBUTING.md                    # Contribution guidelines
+├── CODE_OF_CONDUCT.md                 # Community code of conduct
+├── LICENSE                            # Apache-2.0 license
+└── README.md                          # This file
+
+../../                                 # Shared root-level code (single source of truth)
+├── src/                               # FastAPI application
+├── tests/                             # Unit and integration tests
+├── data/                              # Sample documents and catalog
+├── demo/                              # Demo scripts
+├── requirements.txt                   # Python dependencies
+├── docker-compose.yml                 # Docker compose configuration
+└── Dockerfile                         # Container image
 ```
+
+**Why this structure?** The community and paid editions share identical core logic to avoid divergence and maintenance burden. Community-specific files (governance, CI, license) live in this folder; executable code lives at the root.
 
 ## Prerequisites
 
@@ -65,19 +69,22 @@ Community edition excludes:
 
 ## Quick Start
 
+> **Important:** This community edition directory contains configuration and governance files. Code is sourced from the repository root. Navigate to the root folder to run the application.
+
 ### Local Development
 
-1. **Clone and setup environment**:
+1. **Navigate to root and setup environment**:
    ```bash
-   cd SupplyChain-RAG-Assistant
+   # From editions/community, go to the project root
+   cd ../..
    cp .env.example .env
    # Edit .env and add your OpenAI API key
    ```
 
 2. **Create virtual environment**:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**:
@@ -99,8 +106,9 @@ Community edition excludes:
 
 ### Docker Deployment
 
-1. **Setup environment**:
+1. **Navigate to root and setup environment**:
    ```bash
+   cd ../..
    cp .env.example .env
    # Edit .env with your OpenAI API key
    ```
