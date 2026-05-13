@@ -1,42 +1,28 @@
-name: CI Community Edition
+name: CI
 
 on:
   pull_request:
-    paths:
-      - 'editions/community/**'
-      - '.github/workflows/ci-community.yml'
   push:
-    branches: [ master, main ]
-    paths:
-      - 'editions/community/**'
-      - '.github/workflows/ci-community.yml'
+    branches: [ main ]
 
 jobs:
-  community-tests:
+  test:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    defaults:
-      run:
-        working-directory: editions/community
+    strategy:
+      matrix:
+        python-version: ['3.11']
     steps:
       - uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       - uses: actions/setup-python@v5
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-        # Use Python 3.11 until the current llama-index / pydantic dependency set is
-        # compatible with GitHub Actions' Python 3.12 environment.
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
       - name: Download NLTK data
         run: python -c "import nltk; nltk.download('punkt_tab')"
-      - name: Run community tests
+      - name: Run tests
         run: python -m pytest -q ./tests
       - name: Security gate
         run: python scripts/security_gate.py --report security_gate_report.json
