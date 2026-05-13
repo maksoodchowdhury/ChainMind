@@ -35,7 +35,7 @@ jobs:
       - name: Download NLTK data
         run: python -c "import nltk; nltk.download('punkt_tab')"
       - name: Run community tests
-        run: pytest -q
+        run: python -m pytest -q
       - name: Security gate
         run: python scripts/security_gate.py --report security_gate_report.json
       - name: Quality gate (best-effort)
