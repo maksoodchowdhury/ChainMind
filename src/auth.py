@@ -19,6 +19,7 @@ import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from src.audit import audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,14 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
                 f"Rejected {request.method} {request.url.path} — "
                 f"invalid or missing API key"
             )
+            audit_event(
+                "authn_rejected",
+                {
+                    "method": request.method,
+                    "path": request.url.path,
+                    "reason": "invalid_or_missing_api_key",
+                },
+            )
             return JSONResponse(
                 status_code=401,
                 content={
@@ -74,4 +83,11 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
                     )
                 },
             )
+        audit_event(
+            "authn_accepted",
+            {
+                "method": request.method,
+                "path": request.url.path,
+            },
+        )
         return await call_next(request)

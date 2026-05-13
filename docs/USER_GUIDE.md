@@ -1,6 +1,8 @@
-# SupplyChain RAG Assistant — User Guide
+# ChainMind (formerly SupplyChain RAG Assistant) — User Guide
 
 > **Who is this guide for?** Anyone who needs to ask questions about supply chain documents — demand plans, supplier info, inventory policies, risk reports — without needing to read every file manually or write a single line of code.
+
+> **Branding note:** This product is now branded as **ChainMind**. Some repository paths and older internal documentation may still show the legacy name **SupplyChain RAG Assistant** during the transition period.
 
 ---
 
@@ -18,12 +20,14 @@
 10. [Frequently Asked Questions](#10-frequently-asked-questions)
 11. [Glossary](#11-glossary)
 12. [How to Enhance This Tool With AI](#12-how-to-enhance-this-tool-with-ai)
+13. [Phase Compliance Report](#13-phase-compliance-report)
+14. [Operations Artifacts](#14-operations-artifacts)
 
 ---
 
 ## 1. What Is This Tool?
 
-The **SupplyChain RAG Assistant** is a smart search and question-answering system built specifically for supply chain documents. Think of it as a very knowledgeable colleague who has read every document you have uploaded — and can answer your questions in plain English, instantly.
+**ChainMind** is a smart search and question-answering system built specifically for supply chain documents. Think of it as a very knowledgeable colleague who has read every document you have uploaded — and can answer your questions in plain English, instantly.
 
 **Example:** Instead of manually searching through a 50-page demand forecast report, you can ask:
 
@@ -71,7 +75,7 @@ Open your browser and go to: `http://localhost:8000/health`
 
 You should see:
 ```json
-{"status": "healthy", "service": "SupplyChain RAG Assistant", "version": "0.2.0"}
+{"status": "healthy", "service": "ChainMind", "version": "0.2.0"}
 ```
 
 If you see an error, the API is not running yet.
@@ -153,6 +157,102 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 
 ---
 
+### Option D: Enable Production Hardening Controls
+
+If this system will be used by real users or external teams, enable the following in your `.env` file:
+
+```bash
+ENABLE_STRUCTURED_LOGGING=true
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_REQUESTS_PER_WINDOW=120
+RATE_LIMIT_WINDOW_SECONDS=60
+MAX_INFLIGHT_INGESTION_JOBS=50
+AUTH_ENABLED=true
+API_KEYS=replace-with-real-keys
+```
+
+What each control does:
+- **Structured logging**: Adds request IDs and JSON logs for troubleshooting.
+- **Rate limiting**: Protects the API from sudden traffic spikes.
+- **Ingestion backpressure**: Limits queued uploads; when full, upload returns `503` with a `Retry-After` hint.
+- **API key auth**: Restricts API usage to approved keys.
+
+Optional alerting controls:
+- `SLO_WEBHOOK_URL`: Webhook endpoint to notify when SLO is breached.
+- `SLO_WEBHOOK_SECRET`: Shared secret used to sign webhook payloads.
+- `SLO_WEBHOOK_MAX_ATTEMPTS`: Retry attempts for webhook delivery.
+- `SLO_WEBHOOK_BACKOFF_SECONDS`: Exponential backoff base delay.
+
+---
+
+### Operational Endpoints (for Monitoring)
+
+Use these endpoints after startup:
+
+1. `GET /live` — process is running
+2. `GET /ready` — dependencies are healthy enough to serve traffic
+3. `GET /health` — full service/component health report
+4. `GET /metrics/operational` — request totals, error rate, p50/p95/p99 latency, and per-route metrics
+5. `GET /metrics/slo-status` — current SLO pass/breach summary
+6. `POST /alerts/slo/check` — evaluates SLO and triggers webhook alert if breached
+
+Interpretation tips:
+- If `ready.status = not_ready`, stop routing production traffic.
+- If `ready.mode = degraded`, core service is up, but a non-critical dependency is impaired.
+- Watch `metrics/operational.totals.error_rate`; sustained increase indicates instability.
+- Use `metrics/operational.by_path` to find noisy or slow endpoints quickly.
+- Use `metrics/slo-status` for a quick health summary that monitoring tools can poll.
+- Use `alerts/slo/check` on a schedule (for example every minute) to trigger notifications.
+
+Webhook signature headers for verification:
+- `X-SLO-Timestamp`: request timestamp
+- `X-SLO-Signature`: `sha256=<hmac>` over `<timestamp>.<raw-json-body>`
+
+Receiver verification recommendations:
+- Reject requests if signature verification fails.
+- Reject requests where timestamp is outside a short replay window (for example 300 seconds).
+- Use constant-time comparison for signatures.
+
+Example (Python):
+
+```python
+from src.webhook_security import verify_webhook_signature
+
+ok, reason = verify_webhook_signature(
+  headers=incoming_headers,
+  body=raw_request_body,
+  secret="your-shared-secret",
+  max_age_seconds=300,
+)
+if not ok:
+  # Return 401/403 from your receiver
+  print("Rejected webhook:", reason)
+```
+
+End-to-end alert flow demo script:
+
+```bash
+cd /path/to/SupplyChain-RAG-Assistant
+source .venv/bin/activate
+python demo/run_alert_flow.py --host http://localhost:8000 --receiver http://localhost:9000 --errors 30
+```
+
+This script checks both services, creates controlled error traffic, evaluates current SLO status, and triggers the alert check endpoint in one run.
+
+Shortcut commands:
+
+```bash
+make run-alert-demo
+make test-alert-demo
+```
+
+Recommended baseline targets:
+- Availability: **99.9% or better**
+- API latency: **p95 <= 800 ms** for non-streaming query calls
+- Error rate: **<= 1%** over rolling 5-minute windows
+
+---
+
 ### Option C: Run the Interactive Demo (Quickest way to see it working)
 
 If you have the API already running, you can see the system in action with pre-built demo documents and questions.
@@ -195,6 +295,42 @@ You will see a clean interface with three sections:
 2. **Query the Knowledge Base** — ask questions and see answers with source citations
 3. **Indexed Documents** — view all uploaded files and storage stats
 
+The UI also includes a command-center layer for faster operations:
+- **Workflow rail:** live cards for health, ingestion jobs, and indexed document count
+- **Refresh All:** refresh health, jobs, and documents in one click
+- **Collapsible panels:** collapse Upload, Query, or Indexed Documents sections to reduce noise
+- **Shortcut panel:** click **Show All Shortcuts** to view all keyboard actions
+
+For a cleaner first glance, the UI now supports two viewing modes:
+- **Focus mode (default):** calm, minimal interface that hides ops-heavy status rails
+- **Ops mode:** expanded operational context for power users and debugging
+
+The main workflow is intentionally linear at startup:
+- Only **Upload Documents** is shown first
+- **Query** and **Indexed Documents** stay hidden until you select them from Step 2 or Step 3
+- Only one of the three primary workflow sections is visible at a time
+
+Inside the **Query** feature, the experience is split into two panes on desktop:
+- **Left pane:** question input, mode, and optional filters/prompts
+- **Right pane:** live answer + sources (updates dynamically as query runs)
+
+On smaller screens, these panes stack vertically for readability.
+
+The Query and Documents panels also use progressive disclosure:
+- **Advanced Filters**, **Suggested Prompts**, and **Insights** are hidden by default
+- Open only the controls you need, when you need them
+
+### Keyboard shortcuts in the Web UI
+
+| Shortcut | Action |
+|---|---|
+| `/` | Focus question input |
+| `U` | Focus file upload picker |
+| `R` | Refresh health + jobs + documents |
+| `1` `2` `3` | Jump to Upload / Query / Indexed Documents |
+| `?` | Open/close shortcut panel |
+| `Esc` | Close shortcut panel |
+
 ### Step-by-step upload
 
 **Step 1** — In the "Upload Documents" section, click **"Choose File"** and select your document
@@ -207,7 +343,7 @@ You will see a clean interface with three sections:
 **Step 3** — Click **"Upload & Index"**
 
 You will see:
-- A success message with the job ID
+- A success message with the job ID (or event ID in queue mode)
 - The document appears in the "Ingestion Jobs" list
 - Status updates from `PENDING` to `COMPLETED`
 
@@ -450,11 +586,11 @@ You can ask an AI assistant (GitHub Copilot, ChatGPT, Claude) to help you extend
 
 ### Adding a new document type
 
-> "I have a new document type called `purchase_order`. I want the SupplyChain RAG Assistant to support filtering by `po_number` and `vendor_code` in addition to the existing metadata fields. Show me what changes are needed in `src/api_documents.py` and `src/api_query.py`."
+> "I have a new document type called `purchase_order`. I want ChainMind to support filtering by `po_number` and `vendor_code` in addition to the existing metadata fields. Show me what changes are needed in `src/api_documents.py` and `src/api_query.py`."
 
 ### Adding a delete endpoint
 
-> "The SupplyChain RAG Assistant (FastAPI + Qdrant + LlamaIndex) doesn't have a delete document endpoint. Add `DELETE /api/documents/{document_id}` that removes a document and all its chunks from the Qdrant collection. The file `src/api_documents.py` contains the existing document endpoints."
+> "ChainMind (FastAPI + Qdrant + LlamaIndex) doesn't have a delete document endpoint. Add `DELETE /api/documents/{document_id}` that removes a document and all its chunks from the Qdrant collection. The file `src/api_documents.py` contains the existing document endpoints."
 
 ### Improving answer formatting
 
@@ -462,8 +598,26 @@ You can ask an AI assistant (GitHub Copilot, ChatGPT, Claude) to help you extend
 
 ### Adding a Slack or Teams notification
 
-> "I want the SupplyChain RAG Assistant to send a Slack notification whenever a document finishes indexing. The indexing happens in `src/ingestion_worker.py`. Show me how to add a Slack webhook call at the end of a successful ingestion job."
+> "I want ChainMind to send a Slack notification whenever a document finishes indexing. The indexing happens in `src/ingestion_worker.py`. Show me how to add a Slack webhook call at the end of a successful ingestion job."
 
 ### Deploying to Azure
 
-> "I want to deploy the SupplyChain RAG Assistant (FastAPI app in Docker) to Azure Container Apps. The project has a `docker-compose.yml`. Generate the Azure Bicep templates and GitHub Actions workflow to deploy it to Azure."
+> "I want to deploy ChainMind (FastAPI app in Docker) to Azure Container Apps. The project has a `docker-compose.yml`. Generate the Azure Bicep templates and GitHub Actions workflow to deploy it to Azure."
+
+---
+
+## 13. Phase Compliance Report
+
+Implementation status against the phased roadmap and hardening criteria is tracked in:
+
+- `docs/PHASE_COMPLIANCE.md`
+
+---
+
+## 14. Operations Artifacts
+
+For production operations and resilience governance, use these artifacts:
+
+- `docs/RUNBOOK.md`
+- `docs/INCIDENT_RESPONSE_PLAYBOOK.md`
+- `docs/DR_RTO_RPO.md`

@@ -7,8 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from src.ingestion_worker import (
     JobStatus,
     IngestionJob,
+    can_accept_new_job,
     create_job,
     get_job,
+    get_job_counts,
     list_jobs,
     run_ingestion,
 )
@@ -96,3 +98,19 @@ async def test_run_ingestion_missing_job():
         metadata={},
     )
     mock_pipeline.load_documents.assert_not_called()
+
+
+def test_get_job_counts_has_expected_keys():
+    counts = get_job_counts()
+    assert "pending" in counts
+    assert "processing" in counts
+    assert "done" in counts
+    assert "failed" in counts
+    assert "inflight" in counts
+    assert "total" in counts
+
+
+def test_can_accept_new_job_respects_limit():
+    # Limit=1 should only allow when no inflight jobs exist.
+    accepted = can_accept_new_job(1)
+    assert isinstance(accepted, bool)

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SupplyChain RAG Assistant</title>
+    <title>ChainMind</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,165 +29,296 @@
         </div>
         <div class="hero__status card">
             <h2>System Status</h2>
-            <div id="healthBadge" class="badge badge--idle">Checking...</div>
-            <ul id="healthDetails" class="status-list"></ul>
-            <button id="refreshHealthBtn" class="btn btn--ghost" type="button">Refresh</button>
+            <div id="healthBadge" class="badge badge--idle" aria-live="polite">Checking...</div>
+            <div class="hero__status-actions">
+                <button id="refreshHealthBtn" class="btn btn--ghost" type="button">Refresh</button>
+                <button class="section-toggle section-toggle--inline" type="button" data-target="healthDetails"
+                    data-label-expand="Show Details" data-label-collapse="Hide Details" aria-expanded="false">Show
+                    Details</button>
+            </div>
+            <ul id="healthDetails" class="status-list section-body is-collapsed"></ul>
         </div>
     </header>
 
+    <nav class="step-nav" aria-label="Workflow steps">
+        <div class="step-nav__left">
+            <a href="#upload-section" class="step-pill" data-step-target="upload-section">Step 1: Upload</a>
+            <a href="#query-section" class="step-pill" data-step-target="query-section">Step 2: Query</a>
+            <a href="#docs-section" class="step-pill" data-step-target="docs-section">Step 3: Review</a>
+        </div>
+        <div class="step-nav__right">
+            <label class="density-control" for="densityModeSelect">View
+                <select id="densityModeSelect">
+                    <option value="focus">Focus</option>
+                    <option value="ops">Ops</option>
+                </select>
+            </label>
+            <button id="refreshAllBtn" class="btn btn--ghost btn--small" type="button">Refresh All</button>
+            <a href="/docs" target="_blank" rel="noreferrer" class="btn btn--ghost btn--small step-link">API Docs</a>
+        </div>
+    </nav>
+
+    <section class="workflow-rail" aria-label="Workflow status indicators">
+        <article class="rail-card">
+            <h3>Health</h3>
+            <p id="railHealthText">Checking...</p>
+        </article>
+        <article class="rail-card">
+            <h3>Recent Jobs</h3>
+            <p id="railJobsCount">0</p>
+        </article>
+        <article class="rail-card">
+            <h3>Indexed Docs</h3>
+            <p id="railDocsCount">0</p>
+        </article>
+    </section>
+
+    <section class="shortcut-hint" aria-label="Keyboard shortcut hints">
+        <span><kbd>/</kbd> Focus question</span>
+        <span><kbd>U</kbd> Upload file</span>
+        <span><kbd>R</kbd> Refresh all</span>
+        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Jump steps</span>
+        <button id="showShortcutsBtn" class="btn btn--ghost btn--small" type="button">Show All Shortcuts</button>
+    </section>
+
     <main class="layout">
-        <section class="card card--upload">
-            <h2>1) Upload Documents</h2>
-            <p class="muted">Add documents with optional metadata so searches stay precise.</p>
-
-            <form id="uploadForm" class="form-grid">
-                <label>
-                    API Key (optional)
-                    <input id="apiKeyInput" type="password" placeholder="Used when AUTH_ENABLED=true" />
-                </label>
-                <label>
-                    File
-                    <input id="fileInput" type="file" required />
-                </label>
-                <label>
-                    Supplier
-                    <input id="supplierInput" type="text" placeholder="e.g. Ningbo Electronics" />
-                </label>
-                <label>
-                    Document Type
-                    <input id="docTypeInput" type="text" placeholder="e.g. risk_assessment" />
-                </label>
-                <label>
-                    Date Period
-                    <input id="datePeriodInput" type="text" placeholder="e.g. Q1-2025" />
-                </label>
-                <div class="actions">
-                    <button class="btn" type="submit">Upload & Index</button>
-                </div>
-            </form>
-
-            <div id="uploadMessage" class="flash"></div>
-
-            <h3>Ingestion Jobs</h3>
-            <div id="jobsList" class="stack-list empty">No jobs yet.</div>
-        </section>
-
-        <section class="card card--query">
-            <h2>2) Query the Knowledge Base</h2>
-            <p class="muted">Use metadata filters to narrow scope and improve factual precision.</p>
-
-            <form id="queryForm" class="form-grid">
-                <label class="label--full">
-                    Question
-                    <textarea id="queryInput" rows="4"
-                        placeholder="What are the critical supply chain risks in Q1 2025?" required></textarea>
-                </label>
-
-                <label>
-                    Top K
-                    <input id="topKInput" type="number" min="1" max="15" value="5" />
-                </label>
-
-                <label>
-                    Response Mode
-                    <select id="modeInput">
-                        <option value="standard">Standard</option>
-                        <option value="stream">Stream</option>
-                    </select>
-                </label>
-
-                <label>
-                    Filter: Supplier
-                    <input id="filterSupplierInput" type="text" placeholder="optional" />
-                </label>
-
-                <label>
-                    Filter: Document Type
-                    <input id="filterDocTypeInput" type="text" placeholder="optional" />
-                </label>
-
-                <label>
-                    Filter: Date Period
-                    <input id="filterDateInput" type="text" placeholder="optional" />
-                </label>
-
-                <div class="actions">
-                    <button class="btn" type="submit">Ask Question</button>
-                    <button id="clearAnswerBtn" class="btn btn--ghost" type="button">Clear</button>
-                </div>
-            </form>
-
-            <div class="prompt-chips" id="promptChips"></div>
-
-            <article class="answer-panel">
-                <h3>Answer</h3>
-                <div id="answerBox" class="answer-box empty">Your response will appear here.</div>
-                <h3>Sources</h3>
-                <div id="sourcesBox" class="stack-list empty">No sources yet.</div>
-            </article>
-
-            <!-- Query Metrics -->
-            <div class="metrics-grid">
-                <div class="metric-box">
-                    <div class="metric-label">Response Time</div>
-                    <div id="responseTimeMetric" class="metric-value">-</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Top Source Score</div>
-                    <div id="topScoreMetric" class="metric-value">-</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Sources Found</div>
-                    <div id="sourcesCountMetric" class="metric-value">-</div>
-                </div>
+        <section id="upload-section" class="card card--upload feature-section">
+            <div class="section-head">
+                <h2>1) Upload Documents</h2>
+                <button class="section-toggle" type="button" data-target="upload-body"
+                    aria-expanded="true">Collapse</button>
             </div>
+            <div id="upload-body" class="section-body">
+                <p class="muted">Add documents with optional metadata so searches stay precise.</p>
 
-            <!-- Source Relevance Chart -->
-            <div class="chart-container" id="relevanceChartContainer" style="display:none;">
-                <h3>Source Relevance Scores</h3>
-                <canvas id="relevanceChart" height="60"></canvas>
+                <form id="uploadForm" class="form-grid">
+                    <label>
+                        API Key (optional)
+                        <input id="apiKeyInput" type="password" placeholder="Used when AUTH_ENABLED=true" />
+                    </label>
+                    <label>
+                        File
+                        <input id="fileInput" type="file" required />
+                    </label>
+                    <label>
+                        Supplier
+                        <input id="supplierInput" type="text" placeholder="e.g. Ningbo Electronics" />
+                    </label>
+                    <label>
+                        Document Type
+                        <input id="docTypeInput" type="text" placeholder="e.g. risk_assessment" />
+                    </label>
+                    <label>
+                        Date Period
+                        <input id="datePeriodInput" type="text" placeholder="e.g. Q1-2025" />
+                    </label>
+                    <div class="actions">
+                        <button class="btn" type="submit">Upload Document</button>
+                    </div>
+                </form>
+
+                <div id="uploadMessage" class="flash" role="status" aria-live="polite" aria-atomic="true"></div>
+
+                <div class="inline-head">
+                    <button class="section-toggle" type="button" data-target="upload-timeline-body"
+                        data-label-expand="Ingestion Timeline" data-label-collapse="Hide Timeline"
+                        aria-expanded="false">Ingestion Timeline</button>
+                </div>
+                <div id="upload-timeline-body" class="section-body is-collapsed">
+                    <div id="jobsList" class="stack-list empty">No jobs yet.</div>
+                </div>
             </div>
         </section>
 
-        <section class="card card--docs">
-            <h2>3) Indexed Documents</h2>
-            <div class="actions actions--inline">
-                <button id="refreshDocsBtn" class="btn btn--ghost" type="button">Refresh List</button>
-                <button id="clearCacheBtn" class="btn btn--ghost" type="button">Clear Cache</button>
+        <section id="query-section" class="card card--query feature-section">
+            <div class="section-head">
+                <h2>2) Query the Knowledge Base</h2>
+                <button class="section-toggle" type="button" data-target="query-body"
+                    aria-expanded="true">Collapse</button>
             </div>
+            <div id="query-body" class="section-body">
+                <p class="muted">Use metadata filters to narrow scope and improve factual precision.</p>
 
-            <!-- Document Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="docCountStat">0</div>
-                    <div class="stat-label">Documents</div>
+                <form id="queryForm" class="form-grid">
+                    <label class="label--full">
+                        Question
+                        <textarea id="queryInput" rows="4"
+                            placeholder="Ask a supply-chain question, for example: What risks are critical in Q1 2025?"
+                            required></textarea>
+                    </label>
+
+                    <label>
+                        Top K
+                        <input id="topKInput" type="number" min="1" max="15" value="5" />
+                    </label>
+
+                    <label>
+                        Response Mode
+                        <select id="modeInput">
+                            <option value="standard">Standard</option>
+                            <option value="stream">Stream</option>
+                        </select>
+                    </label>
+
+                    <div class="label--full inline-head">
+                        <button class="section-toggle" type="button" data-target="query-filters-advanced"
+                            data-label-expand="Advanced Filters" data-label-collapse="Hide Filters"
+                            aria-expanded="false">Advanced Filters</button>
+                    </div>
+
+                    <div id="query-filters-advanced" class="form-subgrid label--full section-body is-collapsed">
+                        <label>
+                            Filter: Supplier
+                            <input id="filterSupplierInput" type="text" placeholder="optional" />
+                        </label>
+
+                        <label>
+                            Filter: Document Type
+                            <input id="filterDocTypeInput" type="text" placeholder="optional" />
+                        </label>
+
+                        <label>
+                            Filter: Date Period
+                            <input id="filterDateInput" type="text" placeholder="optional" />
+                        </label>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn" type="submit">Run Query</button>
+                        <button id="clearAnswerBtn" class="btn btn--ghost" type="button">Reset Response</button>
+                    </div>
+                </form>
+
+                <div class="inline-head">
+                    <button class="section-toggle" type="button" data-target="query-prompts-body"
+                        data-label-expand="Suggested Prompts" data-label-collapse="Hide Prompts"
+                        aria-expanded="false">Suggested Prompts</button>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="docSizeStat">0</div>
-                    <div class="stat-label">Total Size (MB)</div>
+                <div id="query-prompts-body" class="section-body is-collapsed">
+                    <div class="prompt-chips" id="promptChips"></div>
                 </div>
             </div>
+        </section>
 
-            <!-- Document Charts -->
-            <div class="charts-row">
-                <div class="chart-half" id="docTypeChartContainer" style="display:none;">
-                    <h3>By Type</h3>
-                    <canvas id="docTypeChart"></canvas>
+        <section id="docs-section" class="card card--docs feature-section">
+            <div class="section-head">
+                <h2>3) Indexed Documents</h2>
+                <button class="section-toggle" type="button" data-target="docs-body"
+                    aria-expanded="true">Collapse</button>
+            </div>
+            <div id="docs-body" class="section-body">
+                <div class="actions actions--inline">
+                    <button id="refreshDocsBtn" class="btn btn--ghost" type="button">Refresh List</button>
+                    <button id="clearCacheBtn" class="btn btn--ghost" type="button">Clear Cache</button>
                 </div>
-                <div class="chart-half" id="docSizeChartContainer" style="display:none;">
-                    <h3>By Size</h3>
-                    <canvas id="docSizeChart"></canvas>
+
+                <div class="inline-head">
+                    <button class="section-toggle" type="button" data-target="docs-insights-body"
+                        data-label-expand="Document Insights" data-label-collapse="Hide Insights"
+                        aria-expanded="false">Document Insights</button>
+                </div>
+
+                <div id="docs-insights-body" class="section-body is-collapsed">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="docCountStat">0</div>
+                            <div class="stat-label">Documents</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="docSizeStat">0</div>
+                            <div class="stat-label">Total Size (MB)</div>
+                        </div>
+                    </div>
+
+                    <div class="charts-row">
+                        <div class="chart-half" id="docTypeChartContainer" style="display:none;">
+                            <h3>By Type</h3>
+                            <canvas id="docTypeChart"></canvas>
+                        </div>
+                        <div class="chart-half" id="docSizeChartContainer" style="display:none;">
+                            <h3>By Size</h3>
+                            <canvas id="docSizeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="inline-head">
+                    <button class="section-toggle" type="button" data-target="docs-list-body"
+                        data-label-expand="Indexed Documents List" data-label-collapse="Hide Documents List"
+                        aria-expanded="false">Indexed Documents List</button>
+                </div>
+                <div id="docs-list-body" class="section-body is-collapsed">
+                    <div id="docsList" class="stack-list empty">No documents indexed yet.</div>
                 </div>
             </div>
-
-            <div id="docsList" class="stack-list empty">No documents indexed yet.</div>
         </section>
     </main>
 
     <footer class="footer">
-        <span>SupplyChain RAG Assistant UI</span>
+        <span>ChainMind UI</span>
         <a href="/docs" target="_blank" rel="noreferrer">Open API Docs</a>
     </footer>
+
+    <aside id="responsePane" class="response-pane" aria-hidden="true" aria-labelledby="responsePaneTitle">
+        <div class="response-pane__header">
+            <h2 id="responsePaneTitle">Query Response</h2>
+            <button id="closeResponsePaneBtn" class="btn btn--ghost btn--small" type="button">Close</button>
+        </div>
+        <div class="response-pane__body">
+            <article class="answer-panel">
+                <h3>Answer</h3>
+                <div id="answerBox" class="answer-box empty">Your answer will appear here.</div>
+                <h3>Sources</h3>
+                <div id="sourcesBox" class="stack-list empty">Source citations will appear here.</div>
+            </article>
+
+            <div class="inline-head">
+                <button class="section-toggle" type="button" data-target="query-insights-body"
+                    data-label-expand="Query Insights" data-label-collapse="Hide Insights" aria-expanded="false">Query
+                    Insights</button>
+            </div>
+
+            <div id="query-insights-body" class="section-body is-collapsed">
+                <div class="metrics-grid">
+                    <div class="metric-box">
+                        <div class="metric-label">Response Time</div>
+                        <div id="responseTimeMetric" class="metric-value">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Top Source Score</div>
+                        <div id="topScoreMetric" class="metric-value">-</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Sources Found</div>
+                        <div id="sourcesCountMetric" class="metric-value">-</div>
+                    </div>
+                </div>
+
+                <div class="chart-container" id="relevanceChartContainer" style="display:none;">
+                    <h3>Source Relevance Scores</h3>
+                    <canvas id="relevanceChart" height="60"></canvas>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <aside id="shortcutModal" class="shortcut-modal" role="dialog" aria-modal="true" aria-hidden="true"
+        aria-labelledby="shortcutModalTitle">
+        <div class="shortcut-modal__card">
+            <h2 id="shortcutModalTitle">Keyboard Shortcuts</h2>
+            <ul>
+                <li><kbd>/</kbd> Focus question field</li>
+                <li><kbd>U</kbd> Focus upload file picker</li>
+                <li><kbd>R</kbd> Refresh health, jobs, and documents</li>
+                <li><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Jump to workflow sections</li>
+                <li><kbd>?</kbd> Toggle this help panel</li>
+                <li><kbd>Esc</kbd> Close this help panel</li>
+            </ul>
+            <button id="closeShortcutsBtn" class="btn btn--ghost" type="button">Close</button>
+        </div>
+    </aside>
+
+    <div id="liveRegion" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
     <script src="/ui/app.js" defer></script>
 </body>

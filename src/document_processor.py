@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -24,6 +25,13 @@ logger = logging.getLogger(__name__)
 
 FINGERPRINT_STORE = Path("data/fingerprints.json")
 _CSV_BATCH_ROWS = 20   # rows per Document chunk for CSV/Excel
+
+_PII_PATTERNS = [
+    (re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"), "[REDACTED_EMAIL]"),
+    (re.compile(r"\b(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]?)\d{3}[\s.-]?\d{4}\b"), "[REDACTED_PHONE]"),
+    (re.compile(r"\b\d{3}-\d{2}-\d{4}\b"), "[REDACTED_SSN]"),
+    (re.compile(r"\b(?:\d[ -]*?){13,16}\b"), "[REDACTED_CARD]"),
+]
 
 
 # ─────────────────────────── fingerprinting ───────────────────────────────
@@ -57,6 +65,50 @@ def is_already_indexed(file_path: str) -> bool:
     return _load_fingerprints().get(sha, {}).get("indexed", False)
 
 
+def redact_pii(text: str) -> str:
+    """Best-effort PII redaction before embeddings are generated."""
+    out = text
+    for pattern, token in _PII_PATTERNS:
+        out = pattern.sub(token, out)
+    return out
+
+
+def _semantic_tokens(text: str) -> set[str]:
+    terms = re.findall(r"[a-z0-9]+", text.lower())
+    return {t for t in terms if len(t) > 2}
+
+
+def _extract_text_for_similarity(file_path: str) -> str:
+    ext = Path(file_path).suffix.lower()
+    try:
+        if ext in {".txt", ".md", ".csv", ".json"}:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        if ext == ".pdf":
+            with open(file_path, "rb") as f:
+                return f.read().decode("utf-8", errors="ignore")
+        with open(file_path, "rb") as f:
+            return f.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+
+def is_semantically_duplicate(file_path: str, threshold: float = 0.92) -> bool:
+    """Near-duplicate detection using token-set similarity against prior files."""
+    reg = _load_fingerprints()
+    target = _semantic_tokens(_extract_text_for_similarity(file_path))
+    if not target:
+        return False
+    for item in reg.values():
+        prior_tokens = set(item.get("semantic_tokens", []))
+        if not prior_tokens:
+            continue
+        score = len(target & prior_tokens) / max(1, len(target | prior_tokens))
+        if score >= threshold:
+            return True
+    return False
+
+
 def register_indexed(file_path: str, chunk_count: int) -> None:
     """Mark a file as successfully indexed."""
     sha = file_hash(file_path)
@@ -66,6 +118,7 @@ def register_indexed(file_path: str, chunk_count: int) -> None:
         "indexed": True,
         "chunk_count": chunk_count,
         "indexed_at": datetime.now(timezone.utc).isoformat(),
+        "semantic_tokens": sorted(_semantic_tokens(_extract_text_for_similarity(file_path)))[:400],
     }
     _save_fingerprints(fp)
     logger.info(f"Fingerprint registered: {Path(file_path).name} ({chunk_count} chunks)")
@@ -78,7 +131,12 @@ def get_fingerprint_registry() -> dict:
 
 # ─────────────────────────── loaders ──────────────────────────────────────
 
-def load_file_as_documents(file_path: str, metadata: dict) -> list[Document]:
+def load_file_as_documents(
+    file_path: str,
+    metadata: dict,
+    *,
+    pii_redaction_enabled: bool = True,
+) -> list[Document]:
     """Dispatch to the correct loader based on file extension."""
     ext = Path(file_path).suffix.lower()
     if ext == ".csv":
@@ -101,6 +159,9 @@ def load_file_as_documents(file_path: str, metadata: dict) -> list[Document]:
         else:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 text = f.read().strip()
+
+        if pii_redaction_enabled:
+            text = redact_pii(text)
 
         if not text:
             text = Path(file_path).name
@@ -136,6 +197,7 @@ def _load_csv(file_path: str, metadata: dict) -> list[Document]:
                 f"Columns: {', '.join(headers)}\n\n"
                 + "\n".join(lines)
             )
+            text = redact_pii(text)
             documents.append(Document(
                 text=text,
                 metadata={
@@ -180,6 +242,7 @@ def _load_excel(file_path: str, metadata: dict) -> list[Document]:
                     f"Columns: {', '.join(headers)}\n\n"
                     + "\n".join(lines)
                 )
+                text = redact_pii(text)
                 documents.append(Document(
                     text=text,
                     metadata={

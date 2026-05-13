@@ -230,11 +230,10 @@ curl http://localhost:8000/health
 
 ## Testing Strategy
 
-### Unit Tests (9 tests)
-- Configuration loading and defaults
-- API endpoint validation
-- Error handling
-- Mocked RAG responses
+### Automated Test Baseline
+- End-to-end API behavior across ingestion/query/health/intelligence/platform/autonomy
+- Governance/security/resilience controls and regression protections
+- Current validated baseline: **161 passed, 3 skipped**
 
 ```bash
 # Run all tests
@@ -247,10 +246,11 @@ pytest tests/ --cov=src --cov-report=html
 pytest tests/test_api.py::test_query_success -v
 ```
 
-### Integration Tests (Next Phase)
-- Document upload → chunking → vectorization
-- End-to-end query with real Qdrant
-- Performance benchmarks
+### Integration Coverage Highlights
+- Document upload → queue/event processing → indexing lifecycle
+- End-to-end query with policy-aware retrieval and reranking options
+- Intelligence flows: scenarios, workflows, HITL review loop
+- Platform/autonomy flows: quotas, chargeback, extension activation, action execution
 
 ### Evaluation Metrics
 - **Retrieval Quality**: Precision, Recall, NDCG@5
@@ -288,23 +288,12 @@ LOG_LEVEL=INFO                        # DEBUG, INFO, WARNING, ERROR
 
 ## Scaling & Optimization
 
-### Short Term
-1. Add document metadata filtering (supplier, date, category)
-2. Implement semantic caching (Redis)
-3. Add batch query processing
-4. Create admin UI for document management
-
-### Medium Term
-1. Qdrant clustering for distributed search
-2. Custom fine-tuned embeddings
-3. Prompt optimization and few-shot learning
-4. Multi-model ensemble (GPT-4 + Claude)
-
-### Long Term
-1. Autonomous RAG agents with tool use
-2. Knowledge graph construction
-3. Real-time document updates
-4. Multi-language support
+### Current State (Implemented)
+1. Production hardening controls (SLO, readiness/liveness, retries, breaker, backpressure)
+2. Knowledge maturity controls (event-driven ingest, lifecycle governance, eval loop)
+3. Intelligence layer (reasoning packs, scenarios, workflows, HITL)
+4. Enterprise platform APIs (tenancy, policy checks, connectors/events/sync/CDC, billing)
+5. Autonomous baseline (monitoring signals, action planning/execution, optimizer)
 
 ---
 
@@ -320,12 +309,12 @@ LOG_LEVEL=INFO                        # DEBUG, INFO, WARNING, ERROR
 
 ---
 
-## Next Steps
+## Operations References
 
-1. ✅ **Current**: Basic RAG with document upload and query
-2. **Next**: Add metadata filtering (supplier, date range)
-3. **Then**: Implement async document processing
-4. **Finally**: Deploy to Azure Container Apps with scaling
+1. `docs/PHASE_COMPLIANCE.md`
+2. `docs/RUNBOOK.md`
+3. `docs/INCIDENT_RESPONSE_PLAYBOOK.md`
+4. `docs/DR_RTO_RPO.md`
 
 ---
 

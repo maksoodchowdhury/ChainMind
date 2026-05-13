@@ -1,0 +1,38 @@
+{
+  "837f14caf7781a844689db37a5c54731100e6866ac31bb966a5c31240c7f12db": {
+    "filename": "phase2_governance.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.311537+00:00"
+  },
+  "a2518288461098b103f38793ae40332416655cce38a53481a34d6bb53c343b1c": {
+    "filename": "catalog_get_test.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.666829+00:00"
+  },
+  "bfa6b26f25ad4123570a7e14108fc802b9d8b5672681751dae6059d2f168a02b": {
+    "filename": "state_patch_test.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.690983+00:00"
+  },
+  "794ad46538b7a90084b9eb1b873fc94335932bf3ed903744aa32b35e940e933f": {
+    "filename": "state_invalid_test.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.710171+00:00"
+  },
+  "296712e2bfdbdcc8dc1a17490c84f5f5f83769ddd102481d2e60e2e1b4d6bc85": {
+    "filename": "dedup_test2.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.897069+00:00"
+  },
+  "b1591ae355a5e1039e302cf5c77763be1447ef7526a3d0ecef6ce04aecefe4c0": {
+    "filename": "force_reindex.txt",
+    "indexed": true,
+    "chunk_count": 1,
+    "indexed_at": "2026-05-12T22:13:29.911508+00:00"
+  }
+}

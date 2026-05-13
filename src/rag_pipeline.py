@@ -21,7 +21,9 @@ from llama_index.llms.openai import OpenAI
 from qdrant_client import QdrantClient
 
 from src import document_processor as dp
+from src.extensions import apply_extractor_extension, apply_ranker_extension
 from src import reranker as reranker_module
+from src.resilience import CircuitBreaker, CircuitOpenError, call_with_retry_budget
 from src.tracer import span
 
 logger = logging.getLogger(__name__)
@@ -62,6 +64,10 @@ class RAGPipeline:
         self._bm25_nodes: list = []
         self.offline_mode: bool = not bool(getattr(settings, "openai_api_key", None))
         self._offline_corpus: list[dict] = []
+        self._breaker = CircuitBreaker(
+            fail_threshold=getattr(settings, "circuit_breaker_fail_threshold", 5),
+            recovery_seconds=getattr(settings, "circuit_breaker_recovery_seconds", 30),
+        )
 
     # ------------------------------------------------------------------
     # Initialization
@@ -146,8 +152,23 @@ class RAGPipeline:
             if dp.is_already_indexed(file_path):
                 logger.info(f"Skipping already-indexed file: {Path(file_path).name}")
                 return 0
+            if getattr(self.settings, "semantic_dedup_enabled", False):
+                if dp.is_semantically_duplicate(
+                    file_path,
+                    threshold=getattr(self.settings, "semantic_dedup_threshold", 0.92),
+                ):
+                    logger.info(f"Skipping semantically-duplicate file: {Path(file_path).name}")
+                    return 0
             try:
-                docs = dp.load_file_as_documents(file_path, metadata)
+                docs = dp.load_file_as_documents(
+                    file_path,
+                    metadata,
+                    pii_redaction_enabled=getattr(self.settings, "pii_redaction_enabled", True),
+                )
+                docs = apply_extractor_extension(
+                    docs,
+                    extension_name=getattr(self.settings, "active_extractor_extension", None),
+                )
                 nodes = dp.apply_chunking(
                     docs,
                     chunk_size=self.settings.chunk_size,
@@ -233,15 +254,27 @@ class RAGPipeline:
             )
             return vector_retriever
 
-    def _apply_reranking(self, nodes: list, query: str) -> list:
-        if not self.settings.enable_reranking:
+    def _apply_reranking(self, nodes: list, query: str, strategy: str = "default") -> list:
+        active_ranker = getattr(self.settings, "active_ranker_extension", None)
+        if strategy.startswith("extension:"):
+            ext_name = strategy.split(":", 1)[1].strip() or active_ranker
+            return apply_ranker_extension(nodes, query, ext_name)
+
+        if active_ranker:
+            nodes = apply_ranker_extension(nodes, query, active_ranker)
+
+        # "none" => skip re-ranking regardless of server settings
+        if strategy == "none":
             return nodes
-        return reranker_module.rerank(
-            query=query,
-            nodes=nodes,
-            top_n=self.settings.rerank_top_n,
-            model_name=self.settings.rerank_model,
-        )
+        # "cross_encoder" => force cross-encoder even if flag is off
+        if strategy == "cross_encoder" or self.settings.enable_reranking:
+            return reranker_module.rerank(
+                query=query,
+                nodes=nodes,
+                top_n=self.settings.rerank_top_n,
+                model_name=self.settings.rerank_model,
+            )
+        return nodes
 
     @staticmethod
     def _format_sources(nodes: list) -> list[dict]:
@@ -317,8 +350,12 @@ class RAGPipeline:
         query_text: str,
         top_k: Optional[int] = None,
         filters: Optional[dict] = None,
+        rerank_strategy: str = "default",
     ) -> dict:
         """Query the index. Returns answer string + citations."""
+        if getattr(self.settings, "circuit_breaker_enabled", True) and not self._breaker.allow():
+            raise CircuitOpenError("RAG dependency circuit is open. Retry later.")
+
         if not self.index:
             if not self.offline_mode:
                 raise ValueError("Index not initialized. Load documents first.")
@@ -334,14 +371,29 @@ class RAGPipeline:
                     "sources": sources,
                 }
 
-            retriever = self._get_retriever(top_k, filters)
+            try:
+                retriever = self._get_retriever(top_k, filters)
 
-            with span("rag.llm.generate"):
-                query_engine = RetrieverQueryEngine.from_args(retriever=retriever, llm=self.llm)
-                response = query_engine.query(query_text)
+                with span("rag.llm.generate"):
+                    query_engine = RetrieverQueryEngine.from_args(retriever=retriever, llm=self.llm)
+                    if getattr(self.settings, "retry_budget_enabled", True):
+                        response = call_with_retry_budget(
+                            lambda: query_engine.query(query_text),
+                            max_attempts=getattr(self.settings, "retry_budget_max_attempts", 3),
+                            backoff_seconds=getattr(self.settings, "retry_budget_backoff_seconds", 0.3),
+                        )
+                    else:
+                        response = query_engine.query(query_text)
 
-            with span("rag.rerank", {"nodes_in": len(response.source_nodes)}):
-                nodes = self._apply_reranking(list(response.source_nodes), query_text)
+                with span("rag.rerank", {"nodes_in": len(response.source_nodes)}):
+                    nodes = self._apply_reranking(
+                        list(response.source_nodes), query_text, strategy=rerank_strategy
+                    )
+
+                self._breaker.mark_success()
+            except Exception:
+                self._breaker.mark_failure()
+                raise
 
         return {
             "query": query_text,

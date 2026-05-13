@@ -10,7 +10,11 @@ A containerized RAG (Retrieval-Augmented Generation) assistant for supply-chain 
 - **REST API**: FastAPI endpoints for all operations
 - **Built-in UI**: Attractive browser UI for uploads, querying, streaming, and source inspection
 - **Containerized**: Docker and docker-compose for easy deployment
-- **Production Ready**: Includes logging, error handling, and health checks
+- **Production Hardening**: SLO checks, liveness/readiness gates, backpressure, retries, and circuit breaker
+- **Security & Governance**: API auth, RBAC, tenant-aware controls, audit trail, lifecycle catalog, retention
+- **Intelligence Layer**: Reasoning packs, what-if scenarios, agentic workflows, HITL queue
+- **Enterprise Platform APIs**: tenancy quotas, policy checks, connectors/events/sync/CDC, chargeback
+- **Autonomy Baseline**: monitoring signals, policy-driven action planning/execution, cost-performance optimizer
 
 ## Project Structure
 
@@ -118,6 +122,33 @@ Body: {
 }
 ```
 
+### Intelligence
+```bash
+GET  /api/intelligence/packs
+GET  /api/intelligence/scenarios
+POST /api/intelligence/scenarios/run
+GET  /api/intelligence/workflows
+POST /api/intelligence/workflows/run
+GET  /api/intelligence/hitl
+POST /api/intelligence/hitl/submit
+```
+
+### Platform & Autonomy
+```bash
+GET  /api/platform/tenants
+PUT  /api/platform/tenants/{tenant_id}/quota
+GET  /api/platform/billing/chargeback
+GET  /api/platform/connectors
+POST /api/platform/events/webhook
+POST /api/platform/cdc/jobs
+GET  /api/platform/extensions
+POST /api/platform/extensions
+POST /api/autonomy/monitor/run
+POST /api/autonomy/actions/propose
+POST /api/autonomy/actions/execute
+POST /api/autonomy/optimizer/recommend
+```
+
 ### Interactive Documentation
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
@@ -132,6 +163,12 @@ Environment variables (see `.env.example`):
 - `QDRANT_PORT`: Qdrant server port (default: 6333)
 - `COLLECTION_NAME`: Qdrant collection name (default: supply_chain_documents)
 - `LOG_LEVEL`: Logging level (default: INFO)
+- `AUTH_ENABLED`, `API_KEYS`: API key authentication controls
+- `AUTHZ_ENABLED`, `REQUIRE_TENANT_HEADER`: RBAC and tenant header enforcement
+- `INGESTION_QUEUE_ENABLED`, `INGESTION_POISON_MAX_ATTEMPTS`: event-driven ingestion controls
+- `TENANT_QUOTA_ENABLED`: tenant-level request quota guardrails
+- `SECRET_PROVIDER`: env, file, vault, azure-keyvault
+- `ENCRYPT_DATA_AT_REST`, `DATA_ENCRYPTION_KEY`: optional encrypted local operational stores
 
 ## Testing
 
@@ -139,6 +176,9 @@ Run all tests:
 ```bash
 pytest
 ```
+
+Current baseline:
+- 161 passed, 3 skipped
 
 Run with coverage:
 ```bash
@@ -166,15 +206,14 @@ pytest tests/test_api.py -v
 3. Query and retrieve with context
 4. Generate response with LLM
 
-## Next Steps
+## Documentation Map
 
-- [ ] Add document chunking strategies
-- [ ] Implement document metadata filtering
-- [ ] Add evaluation metrics for retrieval quality
-- [ ] Create admin dashboard
-- [ ] Add user authentication
-- [ ] Implement caching layer
-- [ ] Add batch processing for large uploads
+- `docs/PHASE_COMPLIANCE.md`: phase-by-phase implementation verification
+- `docs/RUNBOOK.md`: deployment and rollback operations
+- `docs/INCIDENT_RESPONSE_PLAYBOOK.md`: incident response process
+- `docs/DR_RTO_RPO.md`: recovery objectives and DR guidance
+- `docs/USER_GUIDE.md`: end-user workflows and usage instructions
+- `docs/QA_GUIDE.md`: manual/automated validation guidance
 
 ## Troubleshooting
 

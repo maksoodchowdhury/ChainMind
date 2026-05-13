@@ -13,7 +13,9 @@ from src.document_processor import (
     file_hash,
     get_fingerprint_registry,
     is_already_indexed,
+    is_semantically_duplicate,
     load_file_as_documents,
+    redact_pii,
     register_indexed,
 )
 # ── Fingerprinting ────────────────────────────────────────────────────────────
@@ -166,3 +168,25 @@ def test_get_fingerprint_registry_empty_when_no_file(tmp_path, monkeypatch):
     monkeypatch.setattr(dp, "FINGERPRINT_STORE", tmp_path / "missing.json")
     registry = get_fingerprint_registry()
     assert registry == {}
+
+
+def test_redact_pii_masks_sensitive_patterns():
+    redacted = redact_pii("Email john@acme.com phone 555-123-4567 ssn 123-45-6789")
+    assert "john@acme.com" not in redacted
+    assert "555-123-4567" not in redacted
+    assert "123-45-6789" not in redacted
+
+
+def test_semantic_duplicate_detection(tmp_path, monkeypatch):
+    import src.document_processor as dp
+
+    fp_store = tmp_path / "fingerprints.json"
+    monkeypatch.setattr(dp, "FINGERPRINT_STORE", fp_store)
+
+    f1 = tmp_path / "d1.txt"
+    f2 = tmp_path / "d2.txt"
+    f1.write_text("Supplier lead time increased due to port congestion and weather.")
+    f2.write_text("Port congestion and weather increased supplier lead time.")
+
+    register_indexed(str(f1), chunk_count=1)
+    assert is_semantically_duplicate(str(f2), threshold=0.5) is True

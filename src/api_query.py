@@ -1,10 +1,12 @@
 import json
 import logging
+from enum import Enum
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from src.query_policy import policy_for_query
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/query", tags=["query"])
@@ -18,12 +20,20 @@ class QueryFilters(BaseModel):
     date_period: Optional[str] = None
 
 
+class RerankStrategy(str, Enum):
+    """Re-ranking strategy applied after vector retrieval."""
+    default = "default"         # use server-side settings (enable_reranking flag)
+    cross_encoder = "cross_encoder"  # force cross-encoder re-ranking
+    none = "none"               # skip re-ranking entirely
+
+
 class QueryRequest(BaseModel):
     """Query request model."""
 
     query: str
     top_k: int = 5
     filters: Optional[QueryFilters] = None
+    rerank_strategy: RerankStrategy = RerankStrategy.default
 
 
 class Source(BaseModel):
@@ -37,6 +47,7 @@ class QueryResponse(BaseModel):
     query: str
     answer: str
     sources: list[Source]
+    query_class: Optional[str] = None
 
 
 def _active_filters(filters: Optional[QueryFilters]) -> dict:
@@ -65,12 +76,20 @@ async def query_rag(request: QueryRequest) -> QueryResponse:
         if cached:
             return QueryResponse(**cached)
 
-    # ── RAG query ──────────────────────────────────────────────────────────
+    # ── query-class policy selection ─────────────────────────────────────
+    policy = policy_for_query(
+        request.query,
+        top_k=request.top_k,
+        requested_rerank_strategy=request.rerank_strategy.value,
+    )
+
+    # ── RAG query ────────────────────────────────────────────────────────
     try:
         result = rag_pipeline.query(
             query_text=request.query,
-            top_k=request.top_k,
+            top_k=policy.top_k,
             filters=filters,
+            rerank_strategy=policy.rerank_strategy,
         )
     except ValueError as e:
         logger.error(f"Query error: {e}")
@@ -83,6 +102,7 @@ async def query_rag(request: QueryRequest) -> QueryResponse:
         query=result["query"],
         answer=result["answer"],
         sources=[Source(**s) for s in result["sources"]],
+        query_class=policy.query_class,
     )
 
     # ── cache store ────────────────────────────────────────────────────────

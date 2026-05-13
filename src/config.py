@@ -1,4 +1,5 @@
 import logging
+import os
 from pydantic_settings import BaseSettings
 from typing import Optional
 
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # API Configuration
-    app_name: str = "SupplyChain RAG Assistant"
+    app_name: str = "ChainMind"
     app_version: str = "0.2.0"
     debug: bool = False
 
@@ -50,6 +51,19 @@ class Settings(BaseSettings):
     auth_enabled: bool = False
     api_keys: str = ""   # comma-separated list, e.g. "key1,key2"
 
+    # Authorization & tenancy
+    authz_enabled: bool = False
+    require_tenant_header: bool = False
+    allowed_roles: str = "admin,analyst,viewer"
+    tenant_isolation_mode: str = "shared-index"  # shared-index | dedicated-index
+    tenant_quota_enabled: bool = True
+    tenant_default_daily_quota: int = 1000
+    tenant_default_monthly_quota: int = 25000
+
+    @property
+    def valid_roles(self) -> set[str]:
+        return {r.strip().lower() for r in self.allowed_roles.split(",") if r.strip()}
+
     @property
     def valid_api_keys(self) -> set[str]:
         return {k.strip() for k in self.api_keys.split(",") if k.strip()}
@@ -60,6 +74,69 @@ class Settings(BaseSettings):
 
     # Logging
     log_level: str = "INFO"
+    enable_structured_logging: bool = True
+
+    # Basic in-memory rate limiting
+    rate_limit_enabled: bool = False
+    rate_limit_requests_per_window: int = 60
+    rate_limit_window_seconds: int = 60
+
+    # Resilience controls
+    circuit_breaker_enabled: bool = True
+    circuit_breaker_fail_threshold: int = 5
+    circuit_breaker_recovery_seconds: int = 30
+    retry_budget_enabled: bool = True
+    retry_budget_max_attempts: int = 3
+    retry_budget_backoff_seconds: float = 0.3
+
+    # Ingestion queue backpressure
+    max_inflight_ingestion_jobs: int = 50
+
+    # Event-driven ingestion queue
+    ingestion_queue_enabled: bool = True
+    ingestion_poison_max_attempts: int = 3
+
+    # Data safety: PII and retention
+    pii_redaction_enabled: bool = True
+    retention_days_uploads: int = 90
+    retention_days_catalog_history: int = 365
+
+    # Semantic deduplication (similarity threshold 0-1)
+    semantic_dedup_enabled: bool = True
+    semantic_dedup_threshold: float = 0.92
+
+    # Secret management
+    secret_provider: str = "env"  # env | file | vault | azure-keyvault
+    secrets_file: str = "config/secrets.json"
+    policy_file: str = "config/policies.json"
+    azure_key_vault_url: Optional[str] = None
+
+    # Data-at-rest encryption controls for persisted operational stores
+    encrypt_data_at_rest: bool = False
+    data_encryption_key: Optional[str] = None
+
+    # Extension framework activation
+    active_extractor_extension: Optional[str] = None
+    active_ranker_extension: Optional[str] = None
+    active_tool_extension: Optional[str] = None
+
+    # Autonomous execution controls
+    autonomy_auto_execute_enabled: bool = False
+    autonomy_notify_webhook_url: Optional[str] = None
+    autonomy_ticket_webhook_url: Optional[str] = None
+
+    # Transport security guards
+    enforce_transport_security: bool = False
+
+    # SLO evaluation thresholds
+    slo_error_rate_threshold: float = 0.01
+    slo_p95_latency_ms_threshold: float = 800.0
+    slo_minimum_requests: int = 20
+    slo_webhook_url: Optional[str] = None
+    slo_webhook_secret: Optional[str] = None
+    slo_alert_cooldown_seconds: int = 300
+    slo_webhook_max_attempts: int = 3
+    slo_webhook_backoff_seconds: float = 1.0
 
     class Config:
         env_file = ".env"
@@ -73,4 +150,20 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    return Settings()
+    from src.secrets_provider import load_secret
+
+    settings = Settings()
+    if settings.encrypt_data_at_rest:
+        os.environ["DATA_ENCRYPTION_ENABLED"] = "true"
+    if settings.data_encryption_key:
+        os.environ["DATA_ENCRYPTION_KEY"] = settings.data_encryption_key
+    if settings.azure_key_vault_url:
+        os.environ["AZURE_KEY_VAULT_URL"] = settings.azure_key_vault_url
+
+    if not settings.openai_api_key:
+        settings.openai_api_key = load_secret(
+            "OPENAI_API_KEY",
+            provider=settings.secret_provider,
+            secrets_file=settings.secrets_file,
+        )
+    return settings

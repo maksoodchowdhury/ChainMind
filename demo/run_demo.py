@@ -179,12 +179,25 @@ class DemoClient:
     def job_status(self, job_id: str) -> dict:
         return self.session.get(f"{self.host}/api/documents/status/{job_id}", timeout=5).json()
 
+    def event_status(self, event_id: str) -> dict:
+        return self.session.get(f"{self.host}/api/documents/events/{event_id}", timeout=5).json()
+
     def wait_for_job(self, job_id: str, timeout: int = 120) -> str:
         """Poll job until DONE or FAILED, return final status."""
         deadline = time.time() + timeout
         while time.time() < deadline:
             status = str(self.job_status(job_id).get("status", "unknown")).lower()
             if status in ("done", "failed"):
+                return status
+            time.sleep(2)
+        return "timeout"
+
+    def wait_for_event(self, event_id: str, timeout: int = 120) -> str:
+        """Poll event until DONE / FAILED / POISONED, return final status."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            status = str(self.event_status(event_id).get("status", "unknown")).lower()
+            if status in ("done", "failed", "poisoned"):
                 return status
             time.sleep(2)
         return "timeout"
@@ -249,11 +262,24 @@ def upload_documents(client: DemoClient) -> bool:
                 date_period=str(doc["date_period"]),
             )
             job_id = result.get("job_id")
-            print_info(f"Job submitted: {job_id}")
+            event_id = result.get("event_id")
+
+            if job_id:
+                print_info(f"Job submitted: {job_id}")
+            elif event_id:
+                print_info(f"Event submitted: {event_id}")
+            else:
+                print_fail("Upload accepted but no job_id/event_id was returned.")
+                all_ok = False
+                continue
 
             print("  →  Indexing...", end=" ")
             sys.stdout.flush()
-            final_status = client.wait_for_job(job_id, timeout=120)
+            final_status = (
+                client.wait_for_job(str(job_id), timeout=120)
+                if job_id
+                else client.wait_for_event(str(event_id), timeout=120)
+            )
 
             if final_status == "done":
                 print_ok(f"Indexed successfully  [{doc['doc_type']}]")
