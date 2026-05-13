@@ -15,7 +15,6 @@ This edition includes the full core workflow (ingestion, query, citations, evalu
 - **Production Hardening**: SLO checks, liveness/readiness gates, backpressure, retries, and circuit breaker
 - **Security & Governance**: API auth, RBAC, tenant-aware controls, audit trail, lifecycle catalog, retention
 - **Intelligence Layer**: Reasoning packs, what-if scenarios, agentic workflows, HITL queue
-- **Intelligence Layer**: Reasoning packs, what-if scenarios, agentic workflows, HITL queue
 - **Open-Core Scope**: local/self-host deployment with core decision intelligence
 
 ## Community vs Paid Boundary
@@ -250,7 +249,7 @@ pytest tests/test_api.py -v
 
 ## License
 
-MIT
+Apache-2.0
 
 ## References
 

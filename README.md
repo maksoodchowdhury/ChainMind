@@ -4,12 +4,11 @@ A containerized RAG (Retrieval-Augmented Generation) assistant for supply-chain 
 
 ## Distribution Model
 
-This repository is organized into two editions under `editions/`:
+This public repository is organized around the open-source Community edition:
 
 - `editions/community`: Open-source community edition (Apache-2.0)
-- `editions/paid`: Commercial paid edition (all rights reserved)
 
-See the root `LICENSE` and `editions/community/LICENSE` for current licensing boundaries.
+Commercial/enterprise packaging is maintained outside this public repository.
 
 ## Features
 
@@ -240,7 +239,7 @@ pytest tests/test_api.py -v
 
 ## License
 
-MIT
+Apache-2.0
 
 ## References
 
