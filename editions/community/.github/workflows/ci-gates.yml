@@ -11,8 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        # Use Python 3.11 until the current llama-index / pydantic dependency set is
+        # compatible with GitHub Actions' Python 3.12 environment.
         with:
-          python-version: '3.12'
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

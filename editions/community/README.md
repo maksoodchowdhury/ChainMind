@@ -61,6 +61,8 @@ Community edition excludes:
 - Docker & Docker Compose (optional, for containerized deployment)
 - OpenAI API key
 
+> Note: GitHub Actions community CI is temporarily pinned to Python 3.11 because the current `llama-index` / `pydantic` dependency set is not compatible with Python 3.12 in the CI environment.
+
 ## Quick Start
 
 ### Local Development
