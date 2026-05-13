@@ -1,0 +1,18 @@
+ChainMind Repository Licensing Policy
+
+Copyright 2026 ChainMind Contributors
+
+This repository contains multiple distributions with different licensing intent:
+
+1. Community edition: Apache-2.0
+   - Path: editions/community
+   - The license text for this edition is provided at:
+     editions/community/LICENSE
+
+2. Paid edition and root repository assets: All rights reserved
+   - Paths include, but are not limited to: editions/paid and root-level product assets.
+   - No license is granted for use, reproduction, or distribution of paid-edition materials
+     without explicit written permission from the copyright holder.
+
+If you intend to open source the entire repository under a single license in the future,
+replace this file with that final license decision before publishing.

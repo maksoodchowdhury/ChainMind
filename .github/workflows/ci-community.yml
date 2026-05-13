@@ -1,22 +1,22 @@
-name: CI Paid Edition
+name: CI Community Edition
 
 on:
   pull_request:
     paths:
-      - 'editions/paid/**'
-      - '.github/workflows/ci-gates.yml'
+      - 'editions/community/**'
+      - '.github/workflows/ci-community.yml'
   push:
     branches: [ master, main ]
     paths:
-      - 'editions/paid/**'
-      - '.github/workflows/ci-gates.yml'
+      - 'editions/community/**'
+      - '.github/workflows/ci-community.yml'
 
 jobs:
-  paid-test-and-gates:
+  community-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: editions/paid
+        working-directory: editions/community
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+      - name: Run community tests
         run: pytest -q
       - name: Security gate
         run: python scripts/security_gate.py --report security_gate_report.json

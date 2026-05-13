@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem in ChainMind Community
+title: "[Bug] "
+labels:
+  - bug
+  - community
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report. Please include enough detail to reproduce the issue.
+  - type: input
+    id: affected_edition
+    attributes:
+      label: Affected edition
+      description: Confirm whether this issue is in community or paid.
+      placeholder: community
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Step-by-step instructions to reproduce.
+      placeholder: |
+        1. Start service
+        2. Call endpoint
+        3. Observe error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, Docker version, and relevant config flags.
+    validations:
+      required: true

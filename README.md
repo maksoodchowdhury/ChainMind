@@ -2,6 +2,15 @@
 
 A containerized RAG (Retrieval-Augmented Generation) assistant for supply-chain decision support using Python, FastAPI, vector search, and LLMs.
 
+## Distribution Model
+
+This repository is organized into two editions under `editions/`:
+
+- `editions/community`: Open-source community edition (Apache-2.0)
+- `editions/paid`: Commercial paid edition (all rights reserved)
+
+See the root `LICENSE` and `editions/community/LICENSE` for current licensing boundaries.
+
 ## Features
 
 - **Document Management**: Upload and manage supply chain documents (PDFs, text, CSV)
