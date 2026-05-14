@@ -4,7 +4,8 @@ Describe the change and why it is needed.
 
 ## Scope
 
-- [ ] Community edition (`editions/community`)
+- [ ] Community edition
+- [ ] Paid/enterprise edition
 - [ ] CI/workflows
 - [ ] Docs
 

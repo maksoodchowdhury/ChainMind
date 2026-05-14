@@ -4,9 +4,9 @@ A containerized RAG (Retrieval-Augmented Generation) assistant for supply-chain 
 
 ## Distribution Model
 
-This public repository is organized around the open-source Community edition:
+This public repository is the open-source Community edition.
 
-- `editions/community`: Open-source community edition (Apache-2.0)
+The repository root contains the full community code base, documentation, and CI. The paid enterprise edition is maintained separately on the `ChainMind` branch.
 
 Commercial/enterprise packaging is maintained outside this public repository.
 
